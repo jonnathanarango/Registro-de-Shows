@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEITAN - Registro de Shows</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+
+:root{
+--gold:#D4AF37;
+--green:#006039;
+--black:#0A0A0A;
+--white:#F5F5F0;
+}
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+}
+
+body{
+font-family:'Montserrat',sans-serif;
+background:linear-gradient(135deg,#000,#0b0b0b,#111);
+color:white;
+padding:30px;
+}
+
+.container{
+max-width:1200px;
+margin:auto;
+}
+
+.header{
+text-align:center;
+margin-bottom:40px;
+}
+
+.crown{
+font-size:70px;
+color:var(--gold);
+text-shadow:0 0 20px rgba(212,175,55,.6);
+}
+
+.logo{
+font-family:'Cinzel',serif;
+font-size:80px;
+letter-spacing:10px;
+margin-top:10px;
+
+background:linear-gradient(
+180deg,
+#fff6b7,
+#f9df73,
+#D4AF37,
+#a57c00
+);
+
+-webkit-background-clip:text;
+-webkit-text-fill-color:transparent;
+}
+
+.subtitulo{
+margin-top:10px;
+letter-spacing:3px;
+color:#cfcfcf;
+}
+
+.card{
+background:rgba(20,20,20,.95);
+border:1px solid rgba(212,175,55,.3);
+border-radius:20px;
+padding:25px;
+margin-bottom:25px;
+box-shadow:0 10px 30px rgba(0,0,0,.5);
+}
+
+h2{
+font-family:'Cinzel',serif;
+color:var(--gold);
+margin-bottom:20px;
+}
+
+label{
+display:block;
+margin-bottom:8px;
+color:var(--gold);
+}
+
+input,
+textarea{
+width:100%;
+padding:15px;
+background:#121212;
+border:1px solid #333;
+border-radius:12px;
+color:white;
+margin-bottom:15px;
+}
+
+button{
+background:var(--green);
+color:white;
+border:none;
+padding:15px 25px;
+border-radius:12px;
+cursor:pointer;
+font-weight:600;
+}
+
+button:hover{
+background:#007d4a;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:20px;
+}
+
+th{
+background:var(--green);
+padding:15px;
+}
+
+td{
+padding:12px;
+border-bottom:1px solid #2a2a2a;
+text-align:center;
+}
+
+.total{
+text-align:center;
+font-size:35px;
+font-family:'Cinzel',serif;
+color:var(--gold);
+margin-top:25px;
+}
+
+.footer{
+text-align:center;
+margin-top:30px;
+color:#777;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="header">
+
+<div class="crown">♛</div>
+
+<div class="logo">
+NEITAN
+</div>
+
+<div class="subtitulo">
+Jonnathan Arango · Registro Profesional de Shows
+</div>
+
+</div>
+
+<div class="card">
+
+<h2>Registrar Show</h2>
+
+<label>Fecha</label>
+<input type="date" id="fecha">
+
+<label>Observaciones</label>
+<textarea id="obs" placeholder="Lugar, evento o cliente"></textarea>
+
+<button onclick="agregarShow()">
+Agregar Show ($50.000)
+</button>
+
+</div>
+
+<div class="card">
+
+<h2>Historial de Presentaciones</h2>
+
+<table id="tabla">
+
+<thead>
+<tr>
+<th>#</th>
+<th>Fecha</th>
+<th>Observación</th>
+<th>Valor</th>
+</tr>
+</thead>
+
+<tbody></tbody>
+
+</table>
+
+<div class="total">
+TOTAL: $ <span id="total">0</span>
+</div>
+
+<br>
+
+<center>
+<button onclick="exportarExcel()">
+📊 Exportar Excel
+</button>
+</center>
+
+</div>
+
+<div class="footer">
+NEITAN © Sistema de Control de Shows
+</div>
+
+</div>
+
+<script>
+
+const VALOR_SHOW = 50000;
+let registros = JSON.parse(localStorage.getItem("neitanShows")) || [];
+
+actualizarTabla();
+
+function agregarShow(){
+
+let fecha = document.getElementById("fecha").value;
+let obs = document.getElementById("obs").value;
+
+if(fecha===""){
+alert("Seleccione una fecha");
+return;
+}
+
+registros.push({
+fecha:fecha,
+obs:obs,
+valor:VALOR_SHOW
+});
+
+guardarDatos();
+
+document.getElementById("fecha").value="";
+document.getElementById("obs").value="";
+
+actualizarTabla();
+}
+
+function guardarDatos(){
+localStorage.setItem(
+"neitanShows",
+JSON.stringify(registros)
+);
+}
+
+function actualizarTabla(){
+
+let tbody=document.querySelector("#tabla tbody");
+tbody.innerHTML="";
+
+let total=0;
+
+registros.forEach((r,i)=>{
+
+total+=r.valor;
+
+tbody.innerHTML+=`
+<tr>
+<td>${i+1}</td>
+<td>${r.fecha}</td>
+<td>${r.obs}</td>
+<td>$${r.valor.toLocaleString('es-CO')}</td>
+</tr>
+`;
+
+});
+
+document.getElementById("total").innerHTML=
+total.toLocaleString('es-CO');
+}
+
+function exportarExcel(){
+
+let datos=registros.map((r,i)=>({
+Numero:i+1,
+Fecha:r.fecha,
+Observacion:r.obs,
+Valor:r.valor
+}));
+
+const ws=XLSX.utils.json_to_sheet(datos);
+const wb=XLSX.utils.book_new();
+
+XLSX.utils.book_append_sheet(
+wb,
+ws,
+"Shows NEITAN"
+);
+
+XLSX.writeFile(
+wb,
+"Registro_Shows_NEITAN.xlsx"
+);
+
+}
+
+</script>
+
+</body>
+</html>
