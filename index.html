@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>REGISTRO PARA ARTISTAS - NEITAN</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{--gold:#D4AF37;--green:#006039;--black:#0a0a0a;}
+body{font-family:Montserrat,sans-serif;background:linear-gradient(135deg,#000,#0d0d0d,#111);color:#fff;margin:0;padding:25px}
+.container{max-width:1300px;margin:auto}
+.header{text-align:center;padding:20px}
+.title{font-family:Cinzel,serif;font-size:54px;color:var(--gold);letter-spacing:4px}
+.brand{font-family:Cinzel,serif;font-size:28px;background:linear-gradient(#fff7c0,#d4af37,#9c7b18);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.subtitle{color:#d5d5d5}
+.card{background:#121212;border:1px solid rgba(212,175,55,.35);border-radius:18px;padding:20px;margin:18px 0}
+input,textarea,select{width:100%;padding:12px;margin:6px 0 12px;border-radius:10px;border:1px solid #333;background:#1a1a1a;color:#fff}
+button{background:var(--green);color:#fff;border:none;padding:12px 18px;border-radius:10px;cursor:pointer}
+button:hover{opacity:.9}
+table{width:100%;border-collapse:collapse}
+th{background:var(--green)}
+th,td{padding:10px;border:1px solid #2f2f2f;text-align:center}
+.kpi{display:flex;gap:15px;flex-wrap:wrap}
+.box{flex:1;min-width:180px;background:#181818;border:1px solid rgba(212,175,55,.25);padding:15px;border-radius:12px;text-align:center}
+.num{font-size:28px;color:var(--gold);font-weight:bold}
+.paid{color:#67ff91}.pending{color:#ff8a8a}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header">
+<div class="title">REGISTRO PARA ARTISTAS</div>
+<div class="brand">NEITAN</div>
+<div class="subtitle">Sistema Profesional de Gestión de Shows y Pagos · Jonnathan Arango</div>
+</div>
+
+<div class="kpi">
+<div class="box"><div>Total Shows</div><div id="kShows" class="num">0</div></div>
+<div class="box"><div>Total Ingresos</div><div id="kIngresos" class="num">$0</div></div>
+<div class="box"><div>Pagados</div><div id="kPagados" class="num">0</div></div>
+<div class="box"><div>Pendientes</div><div id="kPendientes" class="num">0</div></div>
+</div>
+
+<div class="card">
+<h3>Registrar Show</h3>
+<input type="date" id="fecha">
+<input type="text" id="artista" placeholder="Nombre del artista">
+<textarea id="obs" placeholder="Observaciones"></textarea>
+<button onclick="agregar()">Agregar Show ($50.000)</button>
+</div>
+
+<div class="card">
+<input type="text" id="buscar" placeholder="Buscar artista..." onkeyup="render()">
+<table>
+<thead><tr><th>#</th><th>Fecha</th><th>Artista</th><th>Observación</th><th>Valor</th><th>Estado</th></tr></thead>
+<tbody id="tb"></tbody>
+</table><br>
+<button onclick="excel()">Exportar Excel</button>
+<button onclick="admin()">Panel Administrativo</button>
+</div>
+</div>
+
+<script>
+const CLAVE="030609";
+const VALOR=50000;
+let datos=JSON.parse(localStorage.getItem("neitan_pro")||"[]");
+
+function save(){localStorage.setItem("neitan_pro",JSON.stringify(datos));}
+
+function agregar(){
+ if(!fecha.value||!artista.value){alert("Complete los campos");return;}
+ datos.push({
+  id:Date.now(),
+  fecha:fecha.value,
+  artista:artista.value,
+  obs:obs.value,
+  valor:VALOR,
+  estado:"Pendiente",
+  factura:"FAC-"+(datos.length+1).toString().padStart(6,"0")
+ });
+ save(); render();
+ fecha.value=""; artista.value=""; obs.value="";
+}
+
+function render(){
+ let filtro=(buscar?.value||"").toLowerCase();
+ let html="",ing=0,p=0,pen=0;
+ datos.forEach((r,i)=>{
+  if(filtro && !r.artista.toLowerCase().includes(filtro)) return;
+  ing+=r.valor;
+  if(r.estado==="Pagado") p++; else pen++;
+  html+=`<tr><td>${i+1}</td><td>${r.fecha}</td><td>${r.artista}</td><td>${r.obs||""}</td><td>$${r.valor.toLocaleString('es-CO')}</td><td class="${r.estado==='Pagado'?'paid':'pending'}">${r.estado}</td></tr>`;
+ });
+ tb.innerHTML=html;
+ kShows.innerText=datos.length;
+ kIngresos.innerText="$"+datos.reduce((a,b)=>a+b.valor,0).toLocaleString('es-CO');
+ kPagados.innerText=datos.filter(x=>x.estado==='Pagado').length;
+ kPendientes.innerText=datos.filter(x=>x.estado!=='Pagado').length;
+}
+
+function excel(){
+ const ws=XLSX.utils.json_to_sheet(datos);
+ const wb=XLSX.utils.book_new();
+ XLSX.utils.book_append_sheet(wb,ws,"Artistas");
+ XLSX.writeFile(wb,"Registro_Artistas_NEITAN.xlsx");
+}
+
+function admin(){
+ let c=prompt("Ingrese contraseña");
+ if(c!==CLAVE){alert("Acceso denegado");return;}
+ let n=parseInt(prompt("Número de registro a marcar PAGADO"))-1;
+ if(datos[n]){
+   datos[n].estado="Pagado";
+   datos[n].fechaPago=new Date().toLocaleDateString('es-CO');
+   save(); render();
+   if(confirm("¿Generar factura PDF?")) factura(datos[n]);
+ }
+}
+
+async function factura(r){
+ const {jsPDF}=window.jspdf;
+ const doc=new jsPDF();
+ doc.setFontSize(22);
+ doc.text("REGISTRO PARA ARTISTAS",20,20);
+ doc.setFontSize(14);
+ doc.text("COMPROBANTE OFICIAL DE PAGO",20,32);
+ doc.line(20,36,190,36);
+ doc.text("Factura: "+r.factura,20,50);
+ doc.text("Artista: "+r.artista,20,62);
+ doc.text("Fecha Show: "+r.fecha,20,74);
+ doc.text("Fecha Pago: "+(r.fechaPago||""),20,86);
+ doc.text("Valor Cancelado: $"+r.valor.toLocaleString('es-CO'),20,98);
+ doc.text("Estado: PAGADO",20,110);
+ doc.line(20,130,190,130);
+ doc.text("Pagado por:",20,145);
+ doc.text("NEITAN",20,155);
+ doc.text("Jonnathan Arango",20,165);
+ doc.save(r.factura+".pdf");
+}
+
+render();
+</script>
+</body>
+</html>
