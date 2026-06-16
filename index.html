@@ -375,13 +375,13 @@ function cambiarEstado(i){
 }
 
 function abrirModalAdmin(i){
- let c=prompt("Clave para acceder a Gesti3n de Multas y Fechas:");
+ let c=prompt("Clave para acceder a Gestion de Multas y Fechas:");
  if(c!==CLAVE) return alert("Acceso Denegado");
 
  currentEditIndex = i;
  fechasTempAdmin = [...datos[i].fechas];
  document.getElementById("multaAdmin").value = datos[i].multa || 0;
- document.getElementById("modalTitulo").innerText = "Gesti3n: " + datos[i].artista;
+ document.getElementById("modalTitulo").innerText = "Gestion: " + datos[i].artista;
  document.getElementById("modalAdmin").style.display = "flex";
  pintarFechasAdmin();
 }
